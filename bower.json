@@ -1,0 +1,21 @@
+{
+  "name": "redux",
+  "description": "",
+  "main": "index.js",
+  "authors": [
+    "HungTran <hungtran0203@gmail.com>"
+  ],
+  "license": "ISC",
+  "moduleType": [],
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "bootstrap": "^3.3.6"
+  }
+}

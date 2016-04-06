@@ -1,0 +1,105 @@
+.boxAnchor {
+	position: absolute;
+	border: solid 1px black;
+	z-index: 1000;
+}
+.boxContent {
+	position: relative;
+}
+.boxAnchor .leftBorder {
+	position: absolute;
+	left: 0px;
+	content: "";
+	border-left: 2px solid transparent;
+	height: 100%;
+	top: 0px;	
+}
+.leftBorder:hover {
+	border-left: 3px solid black;
+}
+
+.boxAnchor .rightBorder {
+	position: absolute;
+	right: 0px;
+	content: "";
+	border-right: 2px solid transparent;
+	height: 100%;
+	top: 0px;	
+}
+.rightBorder:hover {
+	border-right: 2px solid black;
+}
+
+.boxAnchor .topBorder {
+	position: absolute;
+	top: 0px;
+	content: "";
+	border-top: 2px solid transparent;
+	width: 100%;
+	left: 0px;	
+}
+.topBorder:hover {
+	border-top: 2px solid black;
+}
+
+.boxAnchor .bottomBorder {
+	position: absolute;
+	bottom: 0px;
+	content: "";
+	border-bottom: 2px solid transparent;
+	width: 100%;
+	left: 0px;	
+}
+.bottomBorder:hover {
+	border-bottom: 2px solid black;
+}
+
+
+
+
+.svg {
+	position: absolute;
+	z-index: 10;
+}
+
+.boxContainer {
+	width: 1000px;
+	height: 1000px;
+	position:absolute;
+}
+.dropzone {
+	border: dashed 1px black;
+}
+
+
+
+.component-appear {
+  transform: translateX(100%);
+}
+
+.component-appear.component-appear-active {
+  transform: translateX(0px);
+  transition: transform .1s ease-in;
+}
+
+.component-enter {
+  transform: translateX(100%);
+}
+
+.component-enter.component-enter-active {
+  transform: translateX(0px);
+  transition: transform .15s ease-in;
+}
+
+.component-leave {
+	position: absolute;
+	top: 0px;
+}
+.component-leave.component-leave-active {
+  transform: translateX(-100%);
+  transition: transform .3s ease-out;
+}
+
+body {
+	overflow-x: hidden;
+}
