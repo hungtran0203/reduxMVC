@@ -1,8 +1,9 @@
 import React from 'react';
 import {stateMapper} from '../lib/schemaReducer.js'
 import { connect } from 'react-redux';
-import {resolve} from '../lib/componentProvider.js'
-import ReactCSSTransitionGroup from 'react-addons-css-transition-group'
+// import {resolve} from '../lib/componentProvider.js'
+import router from '../routers'
+// import ReactCSSTransitionGroup from 'react/addons'
 
 class ComponentLoaderView extends React.Component{
 	constructor(props, context){
@@ -31,20 +32,29 @@ class ComponentLoaderView extends React.Component{
 		if(!components.length){
 			//try to search in component provider
 			if(visible[0]){
-				components = resolve(visible[0]);
-				var props = {componentId:visible[0], key:visible[0]}
-				if(this.props.stateProps.props && typeof this.props.stateProps.props === 'object'){
-					props = Object.assign({}, props, this.props.stateProps.props)
-				}
-				if(React.isValidElement(components)){
-					components = React.cloneElement(components, props)
-					return components;
-				} else {
-					try {
-						return React.createElement(components, props);
-					} catch(e) {
-						return defaultComponent;			
+				// components = resolve(visible[0]);
+				// try to resolve component from router
+				var {req, res} = router.dispatch(visible[0]);
+				components = res.getComponent()
+				if(components){
+					var props = {componentId:visible[0], key:visible[0]}
+					if(this.props.stateProps.props && typeof this.props.stateProps.props === 'object'){
+						props = Object.assign({}, props, this.props.stateProps.props)
 					}
+					props = Object.assign({}, props, req.props)					
+
+					if(React.isValidElement(components)){
+						components = React.cloneElement(components, props)
+						return components;
+					} else {
+						try {
+							return React.createElement(components, props);
+						} catch(e) {
+							return defaultComponent;			
+						}
+					}
+				} else {
+					return defaultComponent;
 				}
 			}
 			return defaultComponent
@@ -61,6 +71,11 @@ class ComponentLoaderView extends React.Component{
 	}
 	render(){
 		var components = this.visibleComponents.bind(this)();
+		return (
+			<div>
+				{components}
+			</div>
+		)
 		return (
 		<ReactCSSTransitionGroup 
 			transitionName="component" 

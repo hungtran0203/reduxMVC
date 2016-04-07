@@ -13,6 +13,8 @@ import userReducer from './reducers/user.js'
 import reducerComposer from './lib/reducerComposer';
 import thunk from 'redux-thunk'
 
+import router from './routers'
+
 var appReducer = reducerComposer()
 									.other(keywordsReducers)
 									.all(userReducer).compose();
