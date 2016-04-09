@@ -1,6 +1,48 @@
 import _ from 'lodash';
-import {schemaReducer, StateTypeInterface} from './schemaReducer.js'
-import {compose} from 'redux'
+
+class StateTypeInterface{
+	constructor(options){
+		// sanity check
+		if(options.itemSchema !== undefined && !_.isPlainObject(options.itemSchema)){
+			throw new Error('itemSchema must be an object')
+		}
+		if(options.stateId === undefined){
+			throw new Error('stateId must be provided')
+		}
+
+		var uniqueId = null
+		var defaultOpt = {
+											initState: null,
+											stateId: uniqueId
+										};
+		this.options =	Object.assign({}, defaultOpt, options)
+	}
+	getId(){
+		return this.options.stateId;
+	}
+	reducer(state, action){
+		return state;
+	}
+	getReducer(relPath){
+		return this.reducer.bind(this);
+	}
+	getItemSchema(){
+		return this.options.itemSchema;
+	}
+	getInitState() {
+		return this.options.initState;
+	}
+
+	getLocalAction(type){
+		var localType;
+		if(_.endsWith(type, '@' + this.options.stateId)){
+			localType = type.substring(0, (type.length - this.options.stateId.length - 1))
+		} else {
+			localType = null
+		}
+		return localType;
+	}
+}
 
 class PrimitiveState extends StateTypeInterface {
 	reducer(state=this.options.initState, action){
@@ -35,6 +77,24 @@ class ObjectState extends StateTypeInterface {
 			throw new Error('itemSchema for collection must be defined')
 		}
 	}
+	getInitState() {
+		var defaultObject = Object.assign({}, this.options.itemSchema);
+		var keys = Object.keys(defaultObject);
+		for(var k of keys){
+			var v = defaultObject[k];
+			if(typeof v === 'function'){
+				v = v.apply(defaultObject, [{}]);
+			}
+			if(v instanceof StateTypeInterface){
+				//init state for stateType concrete
+				v = v.getInitState();
+			}
+
+			defaultObject[k] = v;
+		}
+		return defaultObject;
+		// return this.options.itemSchema;
+	}
 	getDefaultValue(){
 		var defaultObject = Object.assign({}, this.options.itemSchema);
 		var keys = Object.keys(defaultObject);
@@ -67,16 +127,6 @@ class ObjectState extends StateTypeInterface {
 				return state;
 		}
 	}
-	getReducer(relPath){
-		var itemReducer = schemaReducer(this.options.itemSchema, relPath)
-		var objReducer = this.reducer.bind(this);
-		return (state, action) => {
-			var newState = objReducer(state, action)
-			newState = itemReducer(newState, action)
-			return newState;
-		}
-	}
-
 }
 
 class CollectionState extends StateTypeInterface {
@@ -86,56 +136,8 @@ class CollectionState extends StateTypeInterface {
 			throw new Error('itemSchema for collection must be defined')
 		}
 	}
-
-	canReduceItem(item, action){
-		var canReduce = true;
-		//if __acceptedPaths is defined in action
-		if(action && action['__acceptedPaths'] !== undefined){
-			var __acceptedPaths = action['__acceptedPaths'];
-			__acceptedPaths = Array.isArray(__acceptedPaths)?__acceptedPaths:[__acceptedPaths];
-			_.map(__acceptedPaths, (acceptedPath) => {
-				//sanitize the path
-				if(!_.isPlainObject(acceptedPath) 
-					&& acceptedPath['id'] === undefined
-					&& acceptedPath['filter'] === undefined){
-					throw new Error('Invalid acceptedPath format. It mus be an object with id and filter properties')
-				}
-				if(this.getId() === acceptedPath['id']){
-					if(_.isPlainObject(acceptedPath['filter'])){
-						canReduce = _.isMatch(item, acceptedPath['filter'])
-					} else {
-						canReduce = item === acceptedPath['filter']
-					}
-				}
-			})
-		}
-		return canReduce;
-	}
-
-	getReducer(relPath){
-		var itemReducer = schemaReducer(this.options.itemSchema)
-		var that = this;
-
-		var combination = function(state=[], action){
-			var newState = that.reducer(state, action)
-			//dont spread down if collection already handle this state
-			if(newState !== state){
-				return newState;
-			}
-
-			var hasChanged = false;
-			var itemStates = _.map(state, (itemState) => {
-				if(that.canReduceItem(itemState, action)){
-					var newItemState = itemReducer(itemState, action)
-					hasChanged = hasChanged || (newItemState !== itemState);
-					return newItemState;					
-				} else {
-					return itemState
-				}
-			})
-			return hasChanged?itemStates:state;
-		}
-		return combination;
+	getInitState() {
+		return [];
 	}
 
 	reducer(state=[], action){

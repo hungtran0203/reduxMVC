@@ -20,8 +20,8 @@ class CategoryController extends BaseController{
 		const mapStateToProps = (state, ownProps) => {
 			var categories = CategoryModel
 												.query()
-												.limit(12)
-												.skip(0)
+												.limit(6)
+												.page(ownProps.pageId || 1)
 												.sort({name: 1})
 												.find(state);
 			return {categories};
@@ -135,11 +135,11 @@ class CategoryController extends BaseController{
 	}
 
 	addCategory(){
-		this.dispatch(actionCreator.page.goto('CategoryController@edit'))
+		this.dispatch(actionCreator.page.goto('/category/edit'))
 	}
 
 	editCategory(_id){
-		this.dispatch(actionCreator.page.goto('CategoryController@edit', {_id}))
+		this.dispatch(actionCreator.page.goto('/category/edit', {_id}))
 	}
 
 	deleteCategory(_id){
@@ -164,7 +164,7 @@ class CategoryController extends BaseController{
 				.actions([
 					actionCreator.message.system.set('info', 'Saving category'),
 					category.save(),
-					actionCreator.page.goto('CategoryController@index'),
+					actionCreator.page.goto('/categories'),
 					category.isNew()?
 					(actionCreator.message.system.set('info', 'Category "' + category.getDisplayName() + '" added'))
 					:

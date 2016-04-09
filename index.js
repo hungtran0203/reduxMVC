@@ -6,7 +6,7 @@ import { Provider } from 'react-redux'
 import {compose, createStore, applyMiddleware} from 'redux';
 import App from './components/app.js'
 
-import keywordsReducers from './stateSchema/keyword.js';
+// import keywordsReducers from './stateSchema/keyword.js';
 
 import userReducer from './reducers/user.js'
 
@@ -15,8 +15,12 @@ import thunk from 'redux-thunk'
 
 import router from './routers'
 
+import schemaReducer from './redux-schema'
+
+
 var appReducer = reducerComposer()
-									.other(keywordsReducers)
+									// .other(keywordsReducers)
+									.other(schemaReducer)
 									.all(userReducer).compose();
 
 

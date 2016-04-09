@@ -4,13 +4,16 @@ import {Grid, Alert, Well, Thumbnail, FormControls, Button, Glyphicon, ButtonToo
 import _ from 'lodash'
 
 import PaginationContainer from '../pagination.js'
+
+import ReactCSSTransitionGroup from 'react-addons-css-transition-group'
+
 const CategoriesContent = ({categories, controller}) => {
 	function getPagination(){
 		if(categories && typeof categories.then !== 'function' && categories.length < categories.totalCount){
 			return (
 				<Row>
 					<Col md={6} mdOffset={3}>
-					<PaginationContainer items={Math.ceil(categories.totalCount / categories.length)}/>
+					<PaginationContainer collection={categories}/>
 					</Col>
 				</Row>
 			)
@@ -61,6 +64,12 @@ const CategoriesContent = ({categories, controller}) => {
 		}
 	}
 	return (
+		<ReactCSSTransitionGroup 
+			transitionName="component" 
+			transitionEnterTimeout={500} 
+			transitionLeaveTimeout={300} 
+			transitionAppear={true} 
+			transitionAppearTimeout={100}>
   	<Grid fluid>
   		<Row>
   			<Well>
@@ -72,6 +81,7 @@ const CategoriesContent = ({categories, controller}) => {
       </Row>
       {getPagination()}
 	  </Grid>
+	  </ReactCSSTransitionGroup >
 	)
 }
 

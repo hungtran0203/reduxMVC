@@ -1,5 +1,4 @@
-import {schemaReducer} from '../lib/schemaReducer.js';
-import {CollectionState, ObjectState} from '../lib/stateTypes.js'
+import {CollectionState, ObjectState, NumberState} from './stateTypes.js'
 
 var getUniqueId = function(){
 	var index = 1;
@@ -9,6 +8,25 @@ var getUniqueId = function(){
 }()
 
 var schema = {
+	n: new NumberState({stateId: 'N_STATE'}),
+	t: new ObjectState({
+							itemSchema: {
+								_id: 0
+							},
+							stateId: 'T_STATE'
+						}),
+	a: {
+		b: {
+			c: {
+				d:  new ObjectState({
+							itemSchema: {
+								_id: 0
+							},
+							stateId: 'D_STATE'
+						})
+			}
+		}
+	},
 	localData: new ObjectState ({
 		itemSchema: {
 			users: new CollectionState({
@@ -39,6 +57,18 @@ var schema = {
 												itemSchema: {
 													text: '',
 													toId: null,
+													i: new ObjectState({
+														itemSchema: {
+															points: new CollectionState({
+																						itemSchema: {
+																							x: 0,
+																							y: 0
+																						},
+																						stateId: 'POINTS_ACTION'
+																					})
+														},
+														stateId: 'I_ACTION'	
+													})
 												},
 												stateId: 'PATHS_ACTION'
 											})
@@ -108,5 +138,4 @@ var schema = {
 	})
 }
 
-var reducers = schemaReducer(schema)
-export default reducers;
+export default schema;

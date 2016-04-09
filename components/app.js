@@ -8,7 +8,6 @@ import {Layout, LayoutOptions, LayoutConfig}  from '../lib/layout.js'
 import PageLayout from '../layout/PageLayout.js'
 import Navbar from '../containers/navbar.js'
 import ComponentLoader from '../containers/componentLoader.js'
-import componentRegister from './componentRegister.js'
 
 const App = () => (
   <div>
@@ -33,7 +32,6 @@ const App = () => (
   			</ComponentLoader>
   		</div>
   	</LayoutConfig>
-  	<KeywordListContainer/>
 
 		<ComponentLoader _id="comloader.modal" />
   </div>

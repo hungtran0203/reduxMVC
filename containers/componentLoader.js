@@ -3,7 +3,7 @@ import {stateMapper} from '../lib/schemaReducer.js'
 import { connect } from 'react-redux';
 // import {resolve} from '../lib/componentProvider.js'
 import router from '../routers'
-// import ReactCSSTransitionGroup from 'react/addons'
+import ReactCSSTransitionGroup from 'react-addons-css-transition-group'
 
 class ComponentLoaderView extends React.Component{
 	constructor(props, context){
@@ -71,11 +71,11 @@ class ComponentLoaderView extends React.Component{
 	}
 	render(){
 		var components = this.visibleComponents.bind(this)();
-		return (
-			<div>
-				{components}
-			</div>
-		)
+		// return (
+		// 	<div>
+		// 		{components}
+		// 	</div>
+		// )
 		return (
 		<ReactCSSTransitionGroup 
 			transitionName="component" 

@@ -27,7 +27,7 @@ class CategoryFormView extends React.Component {
 		this.forceUpdate();
 	}
 	closeForm(){
-
+		this.props.closeForm()
 	}
 	render(){
 		if(this.props.category) {
@@ -50,7 +50,7 @@ class CategoryFormView extends React.Component {
 			        onChange={this.onChangeHandler.bind(this, ['name'])}
 				    	placeholder="Enter category name" />
 		  			<ButtonToolbar>
-			       <Button onClick={this.closeForm}>Cancel</Button>
+			       <Button onClick={this.closeForm.bind(this)}>Cancel</Button>
 			        <Button bsStyle="primary" disabled={!this.isValidForm()} onClick={this.onSave.bind(this)}>
 			        	Save
 			        </Button>
@@ -129,6 +129,9 @@ const mapDispatchToProps = (dispatch, ownProps) => {
 						})
 				)
 				//display home page content
+			},
+			closeForm: () => {
+				dispatch(actionCreator.page.goto('/categories'))
 			}
 		}
 }
