@@ -8,6 +8,7 @@ import {Layout, LayoutOptions, LayoutConfig}  from '../lib/layout.js'
 import PageLayout from '../layout/PageLayout.js'
 import Navbar from '../containers/navbar.js'
 import ComponentLoader from '../containers/componentLoader.js'
+import Router from '../containers/router.js'
 
 const App = () => (
   <div>
@@ -32,8 +33,8 @@ const App = () => (
   			</ComponentLoader>
   		</div>
   	</LayoutConfig>
-
 		<ComponentLoader _id="comloader.modal" />
+		<Router />
   </div>
 )
 

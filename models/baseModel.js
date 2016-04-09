@@ -170,7 +170,6 @@ class StateModel {
 		if(!collection){
 			throw new Error('Model collection name is not defined.')	
 		}
-		
 		if(this.isNew()){
 			return {type: 'ADD@' + collection, data}
 		} else {

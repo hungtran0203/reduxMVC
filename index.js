@@ -6,7 +6,7 @@ import { Provider } from 'react-redux'
 import {compose, createStore, applyMiddleware} from 'redux';
 import App from './components/app.js'
 
-// import keywordsReducers from './stateSchema/keyword.js';
+import schema from './stateSchema/keyword.js';
 
 import userReducer from './reducers/user.js'
 
@@ -15,8 +15,9 @@ import thunk from 'redux-thunk'
 
 import router from './routers'
 
-import schemaReducer from './redux-schema'
+import {createReducer} from './redux-schema'
 
+var schemaReducer = createReducer(schema)
 
 var appReducer = reducerComposer()
 									// .other(keywordsReducers)
@@ -29,7 +30,7 @@ import persistState from 'redux-localstorage'
 import actionCollection from './lib/actionCollectionMiddleware.js'
 
 const createPersistentStore = compose(
-  persistState(/*paths, config*/)
+  persistState('localData'/*paths, config*/)
 )(applyMiddleware(thunk, actionCollection)(createStore))
 
 const store = createPersistentStore(appReducer)

@@ -7,4 +7,5 @@ router.get('/abcd/:id/', (req, res, next) => {console.log('rrrr', req, res)});
 router.get('/abcd/hungtran/:okie', (req, res, next) => {console.log('llll', req, res)});
 router.get('abcd@xasd', (req, res, next) => {console.log('eeee', req, res)});
 
+
 export default router;

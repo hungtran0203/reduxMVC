@@ -1,6 +1,6 @@
 import * as asyncActions from './async.js'
 import * as messageActions from './message'
-import {stateMapper, stateSetter} from '../lib/schemaReducer.js'
+import {stateMapper} from '../lib/schemaReducer.js'
 
 export const logout = function (){
 	return {type: 'LOGOUT_USER'}

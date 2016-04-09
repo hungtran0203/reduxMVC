@@ -1,5 +1,4 @@
-import {schemaReducer} from '../lib/schemaReducer.js';
-import {CollectionState, ObjectState} from '../lib/stateTypes.js'
+import {CollectionState, ObjectState} from '../redux-schema/stateTypes.js'
 
 var getUniqueId = function(){
 	var index = 1;
@@ -108,5 +107,4 @@ var schema = {
 	})
 }
 
-var reducers = schemaReducer(schema)
-export default reducers;
+export default schema;

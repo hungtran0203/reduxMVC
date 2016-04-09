@@ -34,7 +34,10 @@ import UsersContent from '../containers/content/users.js'
 router.get('/users', (req, res) => { res.setComponent(<UsersContent />) })
 
 import CategoryController from '../controllers/category.js'
-router.get('/categories', (req, res) => {	res.setComponent( CategoryController.index() ) })
+router.get('/categories', (req, res) => {	
+	res.setComponent( CategoryController.index() )
+	res.setContent('/categories')
+})
 
 import CategoryForm from '../components/form/category.js'
 router.get('/category/edit', (req, res) => { res.setComponent( <CategoryForm /> ) })

@@ -1,25 +1,30 @@
 import _ from 'lodash'
 import "babel-polyfill"
 
-var __schemaActionFormatPattern = /^([^@]+)@([^@]+)$/g
+var __schemaActionFormatPattern = /^([^@]+)@([^@]+)$/
+var __stateIdMappingData = {}
 // schema actions must have action.type in format <locaAction>@stateId
 function isSchemaAction(action){
-	return action.type && _.isString(action.type) && __schemaActionFormatPattern.exec(action.type)
+	return action.type && _.isString(action.type) && __schemaActionFormatPattern.test(action.type)
 }
-
+function matchSchemaAction(action){
+	if(action.type && _.isString(action.type)){
+		return __schemaActionFormatPattern.exec(action.type);
+	}
+}
 function hasStateId(stateId){
-	return !!stateIdMappingData[stateId];
+	return !!__stateIdMappingData[stateId];
 }
 
 function createReducer(schema){
-	var schemaData = loadSchema(schema)
+	loadSchema(schema)
 	//return reducer
 	return (state, action) => {
 		//init state if not loaded
-		if(state === undefined) {
-			return initState(state, schemaData)
+		if(state === undefined || action.type === '@@redux/INIT') {
+			return initState(state)
 		}
-		var schemaAction = isSchemaAction(action);
+		var schemaAction = matchSchemaAction(action);
 		if(schemaAction){
 			var stateId = schemaAction[2];
 			var localActionType = schemaAction[1];
@@ -99,22 +104,21 @@ function *schemaIterator(schema, mappingData=[]){
 
 import schema from './schema.js'
 
-var stateIdMappingData = {}
 function loadSchema(schema){
 	for (let state of schemaIterator(schema)){
-		if(stateIdMappingData[state.stateId]){
+		if(__stateIdMappingData[state.stateId]){
 			throw new Error('Duplicate stateId: ' + stateId + ' in state schema tree')
 		}
-		stateIdMappingData[state.stateId] = state;
+		__stateIdMappingData[state.stateId] = state;
 	}	
-	return stateIdMappingData;
+	return __stateIdMappingData;
 }
 
 // select local state from stateId
 // the return value maybe an  array of local state in cases state Type is collection
 // 
 function selectStateFromId(storeState, stateId, parentContrainst){
-	var found = stateIdMappingData[stateId]
+	var found = __stateIdMappingData[stateId]
 	if(found === undefined){
 		throw new Error('StateId: ' + stateId + ' is not decleared in schema tree')
 	}
@@ -143,7 +147,7 @@ function selectStateFromId(storeState, stateId, parentContrainst){
 }
 
 // init store state defined in schema
-function initState(storeState = {}, stateIdMappingData){
+function initState(storeState = {}){
 	function initStateByMappingData(state, data){
 		var currentState = state;
 		for(var mapping of data.mappingData){
@@ -162,23 +166,40 @@ function initState(storeState = {}, stateIdMappingData){
 			}
 		}
 	}
-	for(var m in stateIdMappingData){
-		initStateByMappingData(storeState, stateIdMappingData[m])
+	for(var m in __stateIdMappingData){
+		// only initState for the first level in the tree
+		if(__stateIdMappingData[m].mappingData.length === 1){
+			initStateByMappingData(storeState, __stateIdMappingData[m])
+		}
 	}
 	return storeState;
 }
 
 
 function getReducerFromId(stateId) {
-	var found = stateIdMappingData[stateId]
+	var found = __stateIdMappingData[stateId]
 	if(found === undefined){
 		throw new Error('StateId: ' + stateId + ' is not decleared in schema tree')
 	}
 	return found.reducer;
 }
 
+const stateMapper = function(state, stateId, filter){
+	if(filter){
+		var contrainst ={};
+		contrainst[stateId] = filter
+		var selector = selectStateFromId(state, stateId, contrainst);
+	} else {
+		var selector = selectStateFromId(state, stateId);
+	}
+	var found = selector.next()
+	if(!found.done){
+		return found.value.state;
+	} 
+}
 
-import {compose, createStore, applyMiddleware} from 'redux';
-let schemaReducer = createReducer(schema);
-
-export default schemaReducer
+export {
+	selectStateFromId, 
+	createReducer,
+	stateMapper
+}
