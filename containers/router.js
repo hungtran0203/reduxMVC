@@ -1,6 +1,8 @@
 import { connect } from 'react-redux';
 import React from 'react'
 import router from '../routers'
+import {stateMapper} from '../lib/schemaReducer.js'
+
 class RouterView extends React.Component {
 	render(){
 		var {req, res} = router.dispatch(this.props.currentUrl)
@@ -19,7 +21,7 @@ class RouterView extends React.Component {
 }
 
 const mapStateToProps = (state, ownProps) => {
-	var currentUrl = window.location.href
+	var currentUrl = stateMapper(state, 'CURRENT_URL')
 	return {currentUrl}
 }
 

@@ -198,8 +198,17 @@ const stateMapper = function(state, stateId, filter){
 	} 
 }
 
+const  stateSelector = function(state, stateId, contrainst){
+	var selector = selectStateFromId(state, stateId, contrainst);
+	var found = selector.next()
+	if(!found.done){
+		return found.value.state;
+	} 
+}
+
 export {
 	selectStateFromId, 
 	createReducer,
-	stateMapper
+	stateMapper,
+	stateSelector
 }

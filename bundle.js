@@ -21841,16 +21841,29 @@ var save = exports.save = function save(args) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
-	value: true
+				value: true
 });
 var show = exports.show = function show(loaderId, compId, props) {
-	return { type: 'UPDATE@COMPONENT_LOADERS_COLLECTION', data: { visible: compId, props: props },
-		filter: { _id: loaderId } };
+				return {
+								type: 'INIT@COMPONENT_LOADER_VISIBLE_COMPONENT',
+								data: { componentId: compId, props: props },
+								meta: { contrainst: { 'COMPONENT_LOADERS_COLLECTION': { _id: loaderId } } }
+				};
 };
 
 var hide = exports.hide = function hide(loaderId) {
-	return { type: 'UPDATE@COMPONENT_LOADERS_COLLECTION', data: { visible: '' },
-		filter: { _id: loaderId } };
+				return {
+								type: 'EMPTY@COMPONENT_LOADER_VISIBLE_COMPONENT',
+								meta: { contrainst: { 'COMPONENT_LOADERS_COLLECTION': { _id: loaderId } } }
+				};
+};
+
+var add = exports.add = function add(loaderId, compId, props) {
+				return {
+								type: 'ADD_UNIQUE@COMPONENT_LOADER_VISIBLE_COMPONENT',
+								data: { componentId: compId, props: props },
+								meta: { contrainst: { 'COMPONENT_LOADERS_COLLECTION': { _id: loaderId } } }
+				};
 };
 
 },{}],229:[function(require,module,exports){
@@ -22075,14 +22088,16 @@ var history = (0, _history.createHistory)();
 
 var goto = exports.goto = function goto(url, params) {
 	url = _router2.default.getPath(url);
-	history.push({ pathname: _router2.default.to(url, params) });
+	url = _router2.default.to(url, params);
+	history.push({ pathname: url });
 	return _actionCollection2.default.actions([
 	//clean all system message
 	messageActions.system.clear(),
 	//load the page
-	componentActions.show('comloader.page.content', url, params)]);
+	{ type: 'UPDATE@CURRENT_URL', data: url }]);
 };
 
+// componentActions.show('comloader.page.content', url, params)
 var reload = exports.reload = function reload(params) {
 	var url = _router2.default.getCurrentPath();
 	return goto(url, params);
@@ -23534,15 +23549,13 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _react = require('react');
 
 var _react2 = _interopRequireDefault(_react);
 
-var _schemaReducer = require('../lib/schemaReducer.js');
+var _reduxSchema = require('../redux-schema');
 
 var _reactRedux = require('react-redux');
 
@@ -23572,13 +23585,13 @@ var ComponentLoaderView = function (_React$Component) {
 
 		var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(ComponentLoaderView).call(this, props, context));
 
-		_this.getComponents = _this.getComponents.bind(_this);
+		_this.getChildComponents = _this.getChildComponents.bind(_this);
 		return _this;
 	}
 
 	_createClass(ComponentLoaderView, [{
-		key: 'getComponents',
-		value: function getComponents() {
+		key: 'getChildComponents',
+		value: function getChildComponents() {
 			var components = _react2.default.Children.toArray(this.props.children).filter(function (c) {
 				return c.props.componentId !== undefined;
 			});
@@ -23587,53 +23600,84 @@ var ComponentLoaderView = function (_React$Component) {
 	}, {
 		key: 'visibleComponents',
 		value: function visibleComponents() {
-			var components = this.getComponents();
-			var visible = this.props.stateProps ? this.props.stateProps.visible : this.props.visible;
+			var components = this.getChildComponents();
+
+			var visibleComponents = this.props.visibleComponents;
+			// use component loader visibile property if  visibleComponents not defined
+			if ((!Array.isArray(visibleComponents) || !visibleComponents.length) && this.props.visible !== undefined) {
+				visibleComponents = [{ componentId: this.props.visible }];
+			}
 			var defaultComponent;
-			visible = Array.isArray(visible) ? visible : [visible];
+
+			// visibleComponents must be array to be valid
+			visibleComponents = Array.isArray(visibleComponents) ? visibleComponents : [];
+
+			var visibleComponentIds = visibleComponents.map(function (v) {
+				return v.componentId;
+			});
+
 			components = components.filter(function (component) {
 				var componentId = component.props.componentId;
 				if (component.props.defaultComponent) defaultComponent = component;
-				return visible.indexOf(componentId) > -1;
+				return visibleComponentIds.indexOf(componentId) > -1;
 			});
+
 			//return default component if possible
 			if (!components.length) {
-				//try to search in component provider
-				if (visible[0]) {
-					// components = resolve(visible[0]);
-					// try to resolve component from router
+				//try to search in visibleComponentIds list
+				var _iteratorNormalCompletion = true;
+				var _didIteratorError = false;
+				var _iteratorError = undefined;
 
-					var _router$dispatch = _routers2.default.dispatch(visible[0]);
+				try {
+					for (var _iterator = visibleComponents[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+						var visComp = _step.value;
 
-					var req = _router$dispatch.req;
-					var res = _router$dispatch.res;
+						//try to resolve resource from router
 
-					components = res.getComponent();
-					if (components) {
-						var props = { componentId: visible[0], key: visible[0] };
-						if (this.props.stateProps.props && _typeof(this.props.stateProps.props) === 'object') {
-							props = Object.assign({}, props, this.props.stateProps.props);
-						}
-						props = Object.assign({}, props, req.props);
+						var _router$dispatchResou = _routers2.default.dispatchResource(visComp.componentId);
 
-						if (_react2.default.isValidElement(components)) {
-							components = _react2.default.cloneElement(components, props);
-							return components;
-						} else {
-							try {
-								return _react2.default.createElement(components, props);
-							} catch (e) {
-								return defaultComponent;
+						var req = _router$dispatchResou.req;
+						var res = _router$dispatchResou.res;
+
+						var component = res.getComponent();
+						// if component is resolved, clone it
+						if (component) {
+							// calculate component properties
+							var props = Object.assign({}, { componentId: visComp.componentId, key: visComp.componentId }, visComp.props, req.props);
+							// clone component
+							if (_react2.default.isValidElement(component)) {
+								component = _react2.default.cloneElement(component, props);
+								components.push(component);
+							} else {
+								try {
+									components.push(_react2.default.createElement(component, props));
+								} catch (e) {
+									// it is not a valid component, just skip it
+								}
 							}
 						}
-					} else {
-						return defaultComponent;
+					}
+				} catch (err) {
+					_didIteratorError = true;
+					_iteratorError = err;
+				} finally {
+					try {
+						if (!_iteratorNormalCompletion && _iterator.return) {
+							_iterator.return();
+						}
+					} finally {
+						if (_didIteratorError) {
+							throw _iteratorError;
+						}
 					}
 				}
-				return defaultComponent;
-			} else {
-				return components;
 			}
+			// use default component if defined
+			if (!components.length && defaultComponent) {
+				return defaultComponent;
+			}
+			return components;
 		}
 	}, {
 		key: 'componentDidMount',
@@ -23647,36 +23691,33 @@ var ComponentLoaderView = function (_React$Component) {
 		key: 'render',
 		value: function render() {
 			var components = this.visibleComponents.bind(this)();
-			// return (
-			// 	<div>
-			// 		{components}
-			// 	</div>
-			// )
-			return _react2.default.createElement(
-				_reactAddonsCssTransitionGroup2.default,
-				{
-					transitionName: 'component',
-					transitionEnterTimeout: 500,
-					transitionLeaveTimeout: 300,
-					transitionAppear: true,
-					transitionAppearTimeout: 100 },
-				components
-			);
+
+			if (components.length) {
+				return _react2.default.createElement(
+					_reactAddonsCssTransitionGroup2.default,
+					{
+						transitionName: 'component',
+						transitionEnterTimeout: 500,
+						transitionLeaveTimeout: 300,
+						transitionAppear: true,
+						transitionAppearTimeout: 100 },
+					components
+				);
+			} else {
+				return null;
+			}
 		}
 	}]);
 
 	return ComponentLoaderView;
 }(_react2.default.Component);
 
+var oldV;
 var mapStateToProps = function mapStateToProps(state, ownProps) {
-	var componentLoaders = (0, _schemaReducer.stateMapper)(state, 'COMPONENT_LOADERS_COLLECTION');
-	var loader = null;
-	if (ownProps._id) {
-		loader = componentLoaders.find(function (l) {
-			return l._id === ownProps._id;
-		});
-	}
-	return { stateProps: loader };
+	var visibleComponents = (0, _reduxSchema.stateSelector)(state, 'COMPONENT_LOADER_VISIBLE_COMPONENT', { 'COMPONENT_LOADERS_COLLECTION': { _id: ownProps._id } });
+	return {
+		visibleComponents: visibleComponents
+	};
 };
 
 var mapDispatchToProps = function mapDispatchToProps(dispatch, ownProps) {
@@ -23692,7 +23733,7 @@ var ComponentLoader = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToPro
 
 exports.default = ComponentLoader;
 
-},{"../lib/schemaReducer.js":276,"../routers":1054,"react":1029,"react-addons-css-transition-group":607,"react-redux":862}],253:[function(require,module,exports){
+},{"../redux-schema":1049,"../routers":1055,"react":1029,"react-addons-css-transition-group":607,"react-redux":862}],253:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -23738,7 +23779,7 @@ var ProfileContent = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProp
 
 exports.default = ProfileContent;
 
-},{"../../actions":229,"../../components/content/profile.js":238,"../../lib/schemaReducer.js":276,"../../selectors/profile.js":1055,"react":1029,"react-redux":862}],254:[function(require,module,exports){
+},{"../../actions":229,"../../components/content/profile.js":238,"../../lib/schemaReducer.js":276,"../../selectors/profile.js":1056,"react":1029,"react-redux":862}],254:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -24245,6 +24286,8 @@ var _routers = require('../routers');
 
 var _routers2 = _interopRequireDefault(_routers);
 
+var _schemaReducer = require('../lib/schemaReducer.js');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -24286,7 +24329,7 @@ var RouterView = function (_React$Component) {
 }(_react2.default.Component);
 
 var mapStateToProps = function mapStateToProps(state, ownProps) {
-	var currentUrl = window.location.href;
+	var currentUrl = (0, _schemaReducer.stateMapper)(state, 'CURRENT_URL');
 	return { currentUrl: currentUrl };
 };
 
@@ -24298,7 +24341,7 @@ var Router = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(Route
 
 exports.default = Router;
 
-},{"../routers":1054,"react":1029,"react-redux":862}],262:[function(require,module,exports){
+},{"../lib/schemaReducer.js":276,"../routers":1055,"react":1029,"react-redux":862}],262:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -24746,7 +24789,7 @@ var store = createPersistentStore(appReducer);
 //Test
 window.store = store;
 
-},{"./components/app.js":236,"./lib/actionCollectionMiddleware.js":268,"./lib/reducerComposer":272,"./reducers/user.js":1048,"./redux-schema":1049,"./routers":1054,"./stateSchema/keyword.js":1056,"react":1029,"react-dom":859,"react-redux":862,"redux":1041,"redux-localstorage":1032,"redux-thunk":1035}],266:[function(require,module,exports){
+},{"./components/app.js":236,"./lib/actionCollectionMiddleware.js":268,"./lib/reducerComposer":272,"./reducers/user.js":1048,"./redux-schema":1049,"./routers":1055,"./stateSchema/keyword.js":1057,"react":1029,"react-dom":859,"react-redux":862,"redux":1041,"redux-localstorage":1032,"redux-thunk":1035}],266:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -25669,7 +25712,7 @@ var Request = function () {
 exports.default = Request;
 
 },{"../config.js":249,"lodash":603,"url":222}],274:[function(require,module,exports){
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
 	value: true
@@ -25677,48 +25720,34 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _component = require('../actions/component.js');
-
-var componentActions = _interopRequireWildcard(_component);
-
-function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var Response = function () {
 	function Response() {
 		_classCallCheck(this, Response);
-
-		this.actions = [];
 	}
 
 	_createClass(Response, [{
-		key: 'setComponent',
+		key: "setComponent",
 		value: function setComponent(component) {
 			this.component = component;
 		}
 	}, {
-		key: 'getComponent',
+		key: "getComponent",
 		value: function getComponent() {
 			return this.component;
 		}
 	}, {
-		key: 'hasComponent',
+		key: "hasComponent",
 		value: function hasComponent() {
 			return this.component !== undefined;
 		}
 	}, {
-		key: 'showComponent',
+		key: "showComponent",
 		value: function showComponent(loaderId, componentId) {}
 	}, {
-		key: 'hideComponent',
+		key: "hideComponent",
 		value: function hideComponent(loaderId, componentId) {}
-	}, {
-		key: 'setContent',
-		value: function setContent(contentId, params) {
-			var action = componentActions.show('comloader.page.content', contentId, params);
-			this.actions.push(action);
-		}
 	}]);
 
 	return Response;
@@ -25726,7 +25755,7 @@ var Response = function () {
 
 exports.default = Response;
 
-},{"../actions/component.js":228}],275:[function(require,module,exports){
+},{}],275:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -25763,6 +25792,8 @@ var _querystring = require('querystring');
 
 var _querystring2 = _interopRequireDefault(_querystring);
 
+require('babel-polyfill');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -25771,22 +25802,36 @@ var Router = function () {
 	function Router(routes) {
 		_classCallCheck(this, Router);
 
-		this.routes = Object.assign({}, routes);
+		this.routes = [];
+		var routeObj = Object.assign({}, routes);
+		this.route(routeObj);
+		this.middleware = [];
 	}
 
 	_createClass(Router, [{
 		key: 'get',
 		value: function get(pattern, handler) {
-			this.routes[pattern] = handler;
+			this.routes.push({ pattern: pattern, handler: handler });
+		}
+	}, {
+		key: 'use',
+		value: function use(pattern, handler) {
+			this.middleware.push({ pattern: pattern, handler: handler });
 		}
 	}, {
 		key: 'route',
 		value: function route(obj) {
-			this.routes = Object.assign({}, this.routes, obj);
+			for (var r in obj) {
+				this.routes.push({ pattern: r, handler: obj[r] });
+			}
 		}
 	}, {
 		key: 'dispatch',
 		value: function dispatch(path) {
+			var _marked = [routeGenerator].map(regeneratorRuntime.mark);
+
+			var queue = arguments.length <= 1 || arguments[1] === undefined ? ['middleware', 'routes'] : arguments[1];
+
 			// return an object with
 			function matchPath(pattern, req) {
 				var keys = [];
@@ -25815,8 +25860,11 @@ var Router = function () {
 				}
 				var item = iterator.next();
 				if (!item.done) {
-					var handler = routes[item.value];
-					if (typeof handler === 'function' && matchPath(item.value, req)) {
+					var _item$value = item.value;
+					var pattern = _item$value.pattern;
+					var handler = _item$value.handler;
+
+					if (typeof handler === 'function' && matchPath(pattern, req)) {
 						handler(req, res, next);
 					} else {
 						next();
@@ -25824,39 +25872,136 @@ var Router = function () {
 				}
 			}
 
-			var iterator = Object.keys(this.routes)[Symbol.iterator]();
+			var that = this;
+			function routeGenerator(queue) {
+				var _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, q, routeQueue, _iteratorNormalCompletion2, _didIteratorError2, _iteratorError2, _iterator2, _step2, route;
+
+				return regeneratorRuntime.wrap(function routeGenerator$(_context) {
+					while (1) {
+						switch (_context.prev = _context.next) {
+							case 0:
+								_iteratorNormalCompletion = true;
+								_didIteratorError = false;
+								_iteratorError = undefined;
+								_context.prev = 3;
+								_iterator = queue[Symbol.iterator]();
+
+							case 5:
+								if (_iteratorNormalCompletion = (_step = _iterator.next()).done) {
+									_context.next = 37;
+									break;
+								}
+
+								q = _step.value;
+								routeQueue = that[q];
+								_iteratorNormalCompletion2 = true;
+								_didIteratorError2 = false;
+								_iteratorError2 = undefined;
+								_context.prev = 11;
+								_iterator2 = routeQueue[Symbol.iterator]();
+
+							case 13:
+								if (_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done) {
+									_context.next = 20;
+									break;
+								}
+
+								route = _step2.value;
+								_context.next = 17;
+								return route;
+
+							case 17:
+								_iteratorNormalCompletion2 = true;
+								_context.next = 13;
+								break;
+
+							case 20:
+								_context.next = 26;
+								break;
+
+							case 22:
+								_context.prev = 22;
+								_context.t0 = _context['catch'](11);
+								_didIteratorError2 = true;
+								_iteratorError2 = _context.t0;
+
+							case 26:
+								_context.prev = 26;
+								_context.prev = 27;
+
+								if (!_iteratorNormalCompletion2 && _iterator2.return) {
+									_iterator2.return();
+								}
+
+							case 29:
+								_context.prev = 29;
+
+								if (!_didIteratorError2) {
+									_context.next = 32;
+									break;
+								}
+
+								throw _iteratorError2;
+
+							case 32:
+								return _context.finish(29);
+
+							case 33:
+								return _context.finish(26);
+
+							case 34:
+								_iteratorNormalCompletion = true;
+								_context.next = 5;
+								break;
+
+							case 37:
+								_context.next = 43;
+								break;
+
+							case 39:
+								_context.prev = 39;
+								_context.t1 = _context['catch'](3);
+								_didIteratorError = true;
+								_iteratorError = _context.t1;
+
+							case 43:
+								_context.prev = 43;
+								_context.prev = 44;
+
+								if (!_iteratorNormalCompletion && _iterator.return) {
+									_iterator.return();
+								}
+
+							case 46:
+								_context.prev = 46;
+
+								if (!_didIteratorError) {
+									_context.next = 49;
+									break;
+								}
+
+								throw _iteratorError;
+
+							case 49:
+								return _context.finish(46);
+
+							case 50:
+								return _context.finish(43);
+
+							case 51:
+							case 'end':
+								return _context.stop();
+						}
+					}
+				}, _marked[0], this, [[3, 39, 43, 51], [11, 22, 26, 34], [27,, 29, 33], [44,, 46, 50]]);
+			}
+			var iterator = routeGenerator(queue);
 			var routes = this.routes;
 			var res = new _response2.default();
 			var req = new _request2.default(path);
 
 			next();
 			return { req: req, res: res };
-		}
-	}, {
-		key: 'controller',
-		value: function controller(controllerClass, basePath) {
-			var name = controllerClass.name;
-			var handler = function handler(req, res) {
-				var method = req.params.method;
-				if (method && typeof controllerClass[method] === 'function') {
-					res.setComponent(controllerClass[method]());
-					//if basePath is defined
-					if (basePath !== '/') {
-						req.pathname = basePath + method;
-					}
-				}
-			};
-			// controller address routing
-			this.get(name + "@:method", handler);
-			// controller basePath routing
-			if (basePath === undefined) {
-				basePath = '/' + name;
-			}
-			basePath = _lodash2.default.trimEnd('/');
-
-			if (_lodash2.default.isString(basePath) && basePath.length > 0) {
-				this.get(basePath + '/:method', handler);
-			}
 		}
 	}, {
 		key: 'to',
@@ -25901,7 +26046,7 @@ var router = new Router();
 
 exports.default = router;
 
-},{"../config.js":249,"./request.js":273,"./response.js":274,"lodash":603,"path-to-regexp":605,"querystring":205,"url":222}],276:[function(require,module,exports){
+},{"../config.js":249,"./request.js":273,"./response.js":274,"babel-polyfill":283,"lodash":603,"path-to-regexp":605,"querystring":205,"url":222}],276:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -89608,7 +89753,7 @@ exports.default = userReducer;
 Object.defineProperty(exports, "__esModule", {
 	value: true
 });
-exports.stateMapper = exports.createReducer = exports.selectStateFromId = undefined;
+exports.stateSelector = exports.stateMapper = exports.createReducer = exports.selectStateFromId = undefined;
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
@@ -89991,9 +90136,18 @@ var stateMapper = function stateMapper(state, stateId, filter) {
 	}
 };
 
+var stateSelector = function stateSelector(state, stateId, contrainst) {
+	var selector = selectStateFromId(state, stateId, contrainst);
+	var found = selector.next();
+	if (!found.done) {
+		return found.value.state;
+	}
+};
+
 exports.selectStateFromId = selectStateFromId;
 exports.createReducer = createReducer;
 exports.stateMapper = stateMapper;
+exports.stateSelector = stateSelector;
 
 },{"./schema.js":1050,"./stateTypes.js":1051,"babel-polyfill":283,"lodash":603}],1050:[function(require,module,exports){
 'use strict';
@@ -90249,7 +90403,7 @@ var PrimitiveState = function (_StateTypeInterface) {
 			var localType = this.getLocalAction(action.type);
 			switch (localType) {
 				case 'UPDATE':
-					return action.value;
+					return action.data;
 
 			}
 			return state;
@@ -90435,6 +90589,10 @@ var CollectionState = function (_StateTypeInterface3) {
 
 			var localType = this.getLocalAction(action.type);
 			switch (localType) {
+				case 'ADD_UNIQUE':
+					if (_lodash2.default.findIndex(state, action.data) >= 0) {
+						return state;
+					}
 				case 'ADD':
 					var newItem = Object.assign({}, this.options.itemSchema);
 					var keys = Object.keys(newItem);
@@ -90632,27 +90790,27 @@ var _category4 = _interopRequireDefault(_category3);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-_router2.default.get('modal.login', function (req, res) {
+_router2.default.resource('modal.login', function (req, res) {
 	res.setComponent(_react2.default.createElement(_login2.default, null));
 });
 
-_router2.default.get('modal.dialog', function (req, res) {
+_router2.default.resource('modal.dialog', function (req, res) {
 	res.setComponent(_react2.default.createElement(_dialog2.default, null));
 });
 
-_router2.default.get('/user/register', function (req, res) {
+_router2.default.resource('/user/register', function (req, res) {
 	res.setComponent(_react2.default.createElement(_register2.default, null));
 });
 
-_router2.default.get('system_message', function (req, res) {
+_router2.default.resource('system_message', function (req, res) {
 	res.setComponent(_react2.default.createElement(_systemMessage2.default, null));
 });
 
-_router2.default.get('modal_message', function (req, res) {
+_router2.default.resource('modal_message', function (req, res) {
 	res.setComponent(_react2.default.createElement(_systemMessage2.default, { src: 'MODAL_MESSAGES' }));
 });
 
-_router2.default.get('homepage', function (req, res) {
+_router2.default.resource('homepage', function (req, res) {
 	res.setComponent(_react2.default.createElement(
 		_reactBootstrap.Jumbotron,
 		null,
@@ -90669,7 +90827,7 @@ _router2.default.get('homepage', function (req, res) {
 	));
 });
 
-_router2.default.get('loading_icon', function (req, res) {
+_router2.default.resource('loading_icon', function (req, res) {
 	res.setComponent(_react2.default.createElement(
 		'div',
 		null,
@@ -90677,17 +90835,19 @@ _router2.default.get('loading_icon', function (req, res) {
 	));
 });
 
-_router2.default.get('/profile', function (req, res) {
+_router2.default.resource('/profile', function (req, res) {
 	res.setComponent(_react2.default.createElement(_profile2.default, null));
 });
 
-_router2.default.get('/users', function (req, res) {
+_router2.default.resource('/users', function (req, res) {
 	res.setComponent(_react2.default.createElement(_users2.default, null));
 });
 
 _router2.default.get('/categories', function (req, res) {
+	res.setContent('/categories', req.props);
+});
+_router2.default.resource('/categories', function (req, res) {
 	res.setComponent(_category2.default.index());
-	res.setContent('/categories');
 });
 
 _router2.default.get('/category/edit', function (req, res) {
@@ -90716,37 +90876,103 @@ _router2.default.controller(_category2.default);
 },{"../controllers/category.js":264,"../lib/router.js":275,"react":1029}],1054:[function(require,module,exports){
 'use strict';
 
+var _router = require('../lib/router.js');
+
+var _router2 = _interopRequireDefault(_router);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// extend router to be able to resolve component from componentId
+_router2.default.resource = function (pattern, handler) {
+	_router2.default.__resource = _router2.default.__resource || [];
+	_router2.default.__resource.push({ pattern: pattern, handler: handler });
+};
+_router2.default.dispatchResource = function (id) {
+	return _router2.default.dispatch(id, ['__resource']);
+};
+
+// extend router to be able hanlde controller routing
+
+_router2.default.controller = function (controllerClass, basePath) {
+	var name = controllerClass.name;
+	var handler = function handler(req, res) {
+		var method = req.params.method;
+		if (method && typeof controllerClass[method] === 'function') {
+			res.setContent(name + "@" + method, req.props);
+		}
+	};
+	// controller resource routing
+	_router2.default.resource(name + "@:method", handler);
+
+	// controller basePath routing
+	if (basePath === undefined) {
+		// try to use className as basePath
+		basePath = '/' + name.replace('Controller', '');
+		basePath = _.toLower(basePath);
+	}
+
+	basePath = _.trimEnd(basePath, '/');
+
+	if (_.isString(basePath) && basePath.length > 0) {
+		_router2.default.get(basePath + '/:method', handler);
+	}
+};
+
+},{"../lib/router.js":275}],1055:[function(require,module,exports){
+'use strict';
+
 Object.defineProperty(exports, "__esModule", {
-  value: true
+	value: true
 });
+
+require('./extend.js');
 
 var _router = require('../lib/router.js');
 
 var _router2 = _interopRequireDefault(_router);
 
-var _component = require('./component.js');
-
-var _component2 = _interopRequireDefault(_component);
-
 var _controller = require('./controller.js');
 
 var _controller2 = _interopRequireDefault(_controller);
 
+var _component = require('../actions/component.js');
+
+var componentActions = _interopRequireWildcard(_component);
+
+var _component2 = require('./component.js');
+
+var _component3 = _interopRequireDefault(_component2);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-_router2.default.get('/abcd/:id/', function (req, res, next) {
-  console.log('rrrr', req, res);
+// middleware for responsing action to show/hide component on page content and component on component loader
+// import all router extension here
+
+_router2.default.use('*', function (req, res, next) {
+	res.actions = res.actions || [];
+
+	res.showComponent = function (loaderId, componentId, params) {
+		var action = componentActions.add(loaderId, componentId, params);
+		res.actions.push(action);
+	};
+
+	res.setContent = function (contentId, params) {
+		res.showComponent('comloader.page.content', contentId, params);
+	};
+
+	next();
 });
-_router2.default.get('/abcd/hungtran/:okie', function (req, res, next) {
-  console.log('llll', req, res);
-});
-_router2.default.get('abcd@xasd', function (req, res, next) {
-  console.log('eeee', req, res);
+
+// homepage routing
+_router2.default.get('/home', function (req, res, next) {
+	res.setContent('homepage');
 });
 
 exports.default = _router2.default;
 
-},{"../lib/router.js":275,"./component.js":1052,"./controller.js":1053}],1055:[function(require,module,exports){
+},{"../actions/component.js":228,"../lib/router.js":275,"./component.js":1052,"./controller.js":1053,"./extend.js":1054}],1056:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -90818,7 +91044,7 @@ var profileSelector = (0, _selectorObject2.default)(ProfileSelector);
 
 exports.default = profileSelector;
 
-},{"../lib/schemaReducer.js":276,"../lib/selectorObject.js":277}],1056:[function(require,module,exports){
+},{"../lib/schemaReducer.js":276,"../lib/selectorObject.js":277}],1057:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -90882,6 +91108,10 @@ var schema = {
 		},
 		stateId: 'LOCAL_DATA'
 	}),
+	currentUrl: new _stateTypes.PrimitiveState({
+		initState: window.location.href,
+		stateId: 'CURRENT_URL'
+	}),
 	currentUser: new _stateTypes.ObjectState({
 		itemSchema: {
 			_id: 0
@@ -90919,9 +91149,13 @@ var schema = {
 	componentLoaders: new _stateTypes.CollectionState({
 		itemSchema: {
 			_id: '',
-			visible: '',
-			props: {},
-			data: {}
+			visibleComponents: new _stateTypes.CollectionState({
+				itemSchema: {
+					componentId: '',
+					props: {}
+				},
+				stateId: 'COMPONENT_LOADER_VISIBLE_COMPONENT'
+			})
 		},
 		stateId: 'COMPONENT_LOADERS_COLLECTION'
 	}),

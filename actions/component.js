@@ -1,10 +1,23 @@
 
 export const show = function (loaderId, compId, props){
-	return {type: 'UPDATE@COMPONENT_LOADERS_COLLECTION', data: {visible: compId, props},
-									filter: {_id:loaderId}}
+	return {
+					type: 'INIT@COMPONENT_LOADER_VISIBLE_COMPONENT',
+					data: {componentId: compId, props},
+					meta: {contrainst: {'COMPONENT_LOADERS_COLLECTION': {_id: loaderId}}}
+				}
 }
 
 export const hide = function (loaderId){
-	return {type: 'UPDATE@COMPONENT_LOADERS_COLLECTION', data: {visible: ''},
-									filter: {_id:loaderId}}
+	return {
+					type: 'EMPTY@COMPONENT_LOADER_VISIBLE_COMPONENT',
+					meta: {contrainst: {'COMPONENT_LOADERS_COLLECTION': {_id: loaderId}}}
+				}
+}
+
+export const add = function(loaderId, compId, props){
+	return {
+					type: 'ADD_UNIQUE@COMPONENT_LOADER_VISIBLE_COMPONENT',
+					data: {componentId: compId, props},
+					meta: {contrainst: {'COMPONENT_LOADERS_COLLECTION': {_id: loaderId}}}
+				}
 }

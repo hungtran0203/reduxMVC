@@ -1,4 +1,4 @@
-import {CollectionState, ObjectState} from '../redux-schema/stateTypes.js'
+import {CollectionState, ObjectState, PrimitiveState} from '../redux-schema/stateTypes.js'
 
 var getUniqueId = function(){
 	var index = 1;
@@ -55,6 +55,10 @@ var schema = {
 		},
 		stateId: 'LOCAL_DATA'
 	}),
+	currentUrl: new PrimitiveState({
+		initState: window.location.href,
+		stateId: 'CURRENT_URL'
+	}),
 	currentUser:  new ObjectState({
 		itemSchema: {
 			_id: 0
@@ -92,9 +96,13 @@ var schema = {
 	componentLoaders: new CollectionState({
 		itemSchema: {
 			_id: '',
-			visible: '',
-			props: {},
-			data: {}
+			visibleComponents: new CollectionState({
+				itemSchema: {
+					componentId: '',
+					props: {}
+				},
+				stateId: 'COMPONENT_LOADER_VISIBLE_COMPONENT'
+			})
 		},
 		stateId: 'COMPONENT_LOADERS_COLLECTION'
 	}),

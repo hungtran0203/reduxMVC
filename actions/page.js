@@ -12,13 +12,15 @@ const history = createHistory()
 
 export const goto = function (url, params){
 	url = router.getPath(url)
-	history.push({pathname: router.to(url, params)})
+	url = router.to(url, params);
+	history.push({pathname: url})
 	return ActionCollection.actions(
 			[
 				//clean all system message
 				messageActions.system.clear(),
 				//load the page
-				componentActions.show('comloader.page.content', url, params)
+				{type: 'UPDATE@CURRENT_URL', data:url},
+				// componentActions.show('comloader.page.content', url, params)
 			]
 		)
 }

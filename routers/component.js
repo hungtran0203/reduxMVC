@@ -1,22 +1,22 @@
 import React from 'react'
 import router from '../lib/router.js'
-
 import LoginModal from '../containers/modal/login.js'
-router.get('modal.login', (req, res) => { res.setComponent(<LoginModal />) })
+
+router.resource('modal.login', (req, res) => { res.setComponent(<LoginModal />) })
 
 import DialogModal from '../containers/modal/dialog.js'
-router.get('modal.dialog', (req, res) => { res.setComponent(<DialogModal />) })
+router.resource('modal.dialog', (req, res) => { res.setComponent(<DialogModal />) })
 
 import RegisterContent from '../containers/content/register.js'
-router.get('/user/register', (req, res) => { res.setComponent(<RegisterContent />) })
+router.resource('/user/register', (req, res) => { res.setComponent(<RegisterContent />) })
 
 import SytemMessage from '../containers/systemMessage.js'
-router.get('system_message', (req, res) => { res.setComponent(<SytemMessage />) })
+router.resource('system_message', (req, res) => { res.setComponent(<SytemMessage />) })
 
-router.get('modal_message', (req, res) => {	res.setComponent(<SytemMessage src="MODAL_MESSAGES"/>) })
+router.resource('modal_message', (req, res) => {	res.setComponent(<SytemMessage src="MODAL_MESSAGES"/>) })
 
 import {Jumbotron} from 'react-bootstrap'
-router.get('homepage', (req, res) => {
+router.resource('homepage', (req, res) => {
 	res.setComponent (
 	 <Jumbotron>
 	    <h1>Hello, world!</h1>
@@ -25,18 +25,20 @@ router.get('homepage', (req, res) => {
 	)
 })
 
-router.get('loading_icon', (req, res) => { res.setComponent(<div>...</div>) })
+router.resource('loading_icon', (req, res) => { res.setComponent(<div>...</div>) })
 
 import ProfileContent from '../containers/content/profile.js'
-router.get('/profile', (req, res) => {	res.setComponent(<ProfileContent />) })
+router.resource('/profile', (req, res) => {	res.setComponent(<ProfileContent />) })
 
 import UsersContent from '../containers/content/users.js'
-router.get('/users', (req, res) => { res.setComponent(<UsersContent />) })
+router.resource('/users', (req, res) => { res.setComponent(<UsersContent />) })
 
 import CategoryController from '../controllers/category.js'
 router.get('/categories', (req, res) => {	
-	res.setComponent( CategoryController.index() )
-	res.setContent('/categories')
+	res.setContent('/categories', req.props)
+})
+router.resource('/categories', (req, res) => {	
+	res.setComponent( CategoryController.index() )	
 })
 
 import CategoryForm from '../components/form/category.js'

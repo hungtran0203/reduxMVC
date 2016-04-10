@@ -1,5 +1,5 @@
 import React from 'react';
-import {stateMapper} from '../lib/schemaReducer.js'
+import {stateSelector} from '../redux-schema'
 import { connect } from 'react-redux';
 // import {resolve} from '../lib/componentProvider.js'
 import router from '../routers'
@@ -8,9 +8,9 @@ import ReactCSSTransitionGroup from 'react-addons-css-transition-group'
 class ComponentLoaderView extends React.Component{
 	constructor(props, context){
 		super(props, context)
-		this.getComponents = this.getComponents.bind(this);
+		this.getChildComponents = this.getChildComponents.bind(this);
 	}
-	getComponents(){
+	getChildComponents(){
 		var components = React.Children.toArray(this.props.children).filter( 
 		(c) => { 
 			return c.props.componentId !== undefined
@@ -18,50 +18,62 @@ class ComponentLoaderView extends React.Component{
 		return components
 	}
 	visibleComponents(){
-		var components = this.getComponents();
-		var visible = this.props.stateProps? this.props.stateProps.visible : this.props.visible;
+		var components = this.getChildComponents();
+
+		var visibleComponents = this.props.visibleComponents
+		// use component loader visibile property if  visibleComponents not defined
+		if((!Array.isArray(visibleComponents) || !visibleComponents.length)
+		 && this.props.visible !== undefined){
+			visibleComponents = [{componentId:this.props.visible}];
+		}
 		var defaultComponent
-		visible = Array.isArray(visible)?visible:[visible];
+
+		// visibleComponents must be array to be valid
+		visibleComponents = Array.isArray(visibleComponents)?visibleComponents:[];
+
+		var visibleComponentIds = visibleComponents.map((v) => v.componentId)
+
 		components = components.filter((component) => {
 			var componentId = component.props.componentId;
 			if(component.props.defaultComponent)
 				defaultComponent = component
-			return visible.indexOf(componentId) > -1;
+			return visibleComponentIds.indexOf(componentId) > -1;
 		})
+
 		//return default component if possible
 		if(!components.length){
-			//try to search in component provider
-			if(visible[0]){
-				// components = resolve(visible[0]);
-				// try to resolve component from router
-				var {req, res} = router.dispatch(visible[0]);
-				components = res.getComponent()
-				if(components){
-					var props = {componentId:visible[0], key:visible[0]}
-					if(this.props.stateProps.props && typeof this.props.stateProps.props === 'object'){
-						props = Object.assign({}, props, this.props.stateProps.props)
-					}
-					props = Object.assign({}, props, req.props)					
-
-					if(React.isValidElement(components)){
-						components = React.cloneElement(components, props)
-						return components;
+			//try to search in visibleComponentIds list
+			for(let visComp of visibleComponents){
+				//try to resolve resource from router
+				var {req, res} = router.dispatchResource(visComp.componentId)
+				var component = res.getComponent()
+				// if component is resolved, clone it
+				if(component){
+					// calculate component properties
+					var props = Object.assign({}, 
+						{componentId:visComp.componentId, key:visComp.componentId}, 
+						visComp.props,
+						req.props
+						)
+					// clone component
+					if(React.isValidElement(component)){
+						component = React.cloneElement(component, props)
+						components.push(component);
 					} else {
 						try {
-							return React.createElement(components, props);
+							components.push(React.createElement(component, props));
 						} catch(e) {
-							return defaultComponent;			
+							// it is not a valid component, just skip it
 						}
 					}
-				} else {
-					return defaultComponent;
 				}
 			}
-			return defaultComponent
-		} else {
-			return components
 		}
-
+		// use default component if defined
+		if(!components.length && defaultComponent){
+			return defaultComponent
+		}
+		return components;
 	}
 	componentDidMount(){
 		//init store state if needed
@@ -71,31 +83,34 @@ class ComponentLoaderView extends React.Component{
 	}
 	render(){
 		var components = this.visibleComponents.bind(this)();
-		// return (
-		// 	<div>
-		// 		{components}
-		// 	</div>
-		// )
-		return (
-		<ReactCSSTransitionGroup 
-			transitionName="component" 
-			transitionEnterTimeout={500} 
-			transitionLeaveTimeout={300} 
-			transitionAppear={true} 
-			transitionAppearTimeout={100}>
-			{components}
-  	</ReactCSSTransitionGroup>
-		)
+		
+		if(components.length){
+			return (
+			<ReactCSSTransitionGroup 
+				transitionName="component" 
+				transitionEnterTimeout={500} 
+				transitionLeaveTimeout={300} 
+				transitionAppear={true} 
+				transitionAppearTimeout={100}>
+				{components}
+	  	</ReactCSSTransitionGroup>
+			)			
+		} else {
+			return null;
+		}
 	}
 }
 
+var oldV
 const mapStateToProps = (state, ownProps) => {
-	var componentLoaders = stateMapper(state, 'COMPONENT_LOADERS_COLLECTION');
-	var loader = null
-	if(ownProps._id){
-		loader = componentLoaders.find((l) => {return l._id === ownProps._id})
-	}
-  return {stateProps: loader}
+	var visibleComponents = stateSelector(
+		state, 
+		'COMPONENT_LOADER_VISIBLE_COMPONENT', 
+		{'COMPONENT_LOADERS_COLLECTION': {_id:ownProps._id}}
+	);
+  return {
+  		visibleComponents
+  	}
 }
 
 const mapDispatchToProps = (dispatch, ownProps) => {

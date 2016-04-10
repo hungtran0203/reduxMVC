@@ -49,7 +49,7 @@ class PrimitiveState extends StateTypeInterface {
 		var localType = this.getLocalAction(action.type)
 		switch(localType){
 			case 'UPDATE':
-				return action.value
+				return action.data
 			
 		}
 		return state
@@ -143,6 +143,10 @@ class CollectionState extends StateTypeInterface {
 	reducer(state=[], action){
 		var localType = this.getLocalAction(action.type)
 		switch(localType){
+			case 'ADD_UNIQUE':
+				if(_.findIndex(state, action.data) >= 0) {
+					return state;
+				}
 			case 'ADD':
 				var newItem = Object.assign({}, this.options.itemSchema);
 				var keys = Object.keys(newItem);
@@ -239,7 +243,6 @@ class CollectionState extends StateTypeInterface {
 		return state
 	}
 }
-
 
 export {
 	StateTypeInterface,

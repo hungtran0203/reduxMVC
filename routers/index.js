@@ -1,11 +1,44 @@
+import './extend.js'	// import all router extension here
+
 import router from '../lib/router.js'
 
-import componentRouter from './component.js'
 import controllerRouter from './controller.js'
 
-router.get('/abcd/:id/', (req, res, next) => {console.log('rrrr', req, res)});
-router.get('/abcd/hungtran/:okie', (req, res, next) => {console.log('llll', req, res)});
-router.get('abcd@xasd', (req, res, next) => {console.log('eeee', req, res)});
+import * as componentActions from '../actions/component.js'
+import componentRouter from './component.js'
+
+
+// middleware for responsing action to show/hide component on page content and component on component loader
+router.use('*', (req, res, next) => {
+	res.actions = res.actions || [];
+
+	res.showComponent = (loaderId, componentId, params) => {
+		var action = componentActions.add(loaderId, componentId, params)
+		res.actions.push(action)		
+	}
+
+	res.setContent = (contentId, params) => {
+		res.showComponent('comloader.page.content', contentId, params)
+	}
+
+	next();
+})
+
+
+// homepage routing
+router.get('/home', (req, res, next) => {
+	res.setContent('homepage')
+})
+
+
+
+
+
+
+
+
+
+
 
 
 export default router;
